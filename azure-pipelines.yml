@@ -2,12 +2,15 @@
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
-
+variables:
+- group: VarGroupe1
+- name: my-passed-variable
+  value: $[variables.mavenPomFile]
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: Default
 
 steps:
 - script: echo Hello, world!
@@ -17,3 +20,31 @@ steps:
     echo Add other tasks to build, test, and deploy your project.
     echo See https://aka.ms/yaml
   displayName: 'Run a multi-line script'
+
+
+- script: 'wget http://www-eu.apache.org/dist/maven/maven-3/3.5.4/binaries/apache-maven-3.5.4-bin.zip'
+
+- task: ExtractFiles@1
+  inputs:
+      archiveFilePatterns: 'apache-maven-3.5.4-bin.zip'
+      destinationFolder: '$(build.sourcesdirectory)/maven'
+
+- task: Maven@3
+  inputs:
+    mavenPomFile: $(my-passed-variable)
+    mavenOptions: '-Xmx3072m'
+    #javaHomeOption: 'JDKVersion'
+    #jdkVersionOption: '1.11'
+    jdkArchitectureOption: 'x64'
+    goals: 'clean install -P ballerina'
+    mavenVersionOption: 'Path'
+    mavenDirectory: '$(build.sourcesdirectory)/maven/apache-maven-3.5.4'
+    mavenSetM2Home: true
+  
+- task: Maven@3
+  displayName: run
+  inputs:
+    mavenPomFile: 'pom.xml'
+    goals: 'spring-boot:run'
+    #publishJUnitResults: false      
+    #jdkVersionOption: '1.11'
